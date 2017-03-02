@@ -29,8 +29,9 @@ from .models import (
     ProxyCategory, ProxyObjectA, ProxyObjectB, Ranking, Related,
     RelatedIndividual, RelatedObject, Report, ReservedName, Responsibility,
     School, SharedConnection, SimpleCategory, SingleObject, SpecialCategory,
-    Staff, StaffUser, Student, Tag, Task, Ticket21203Child, Ticket21203Parent,
-    Ticket23605A, Ticket23605B, Ticket23605C, TvChef, Valid, X,
+    Staff, StaffUser, Student, Tag, Task, Teacher, Ticket21203Child,
+    Ticket21203Parent, Ticket23605A, Ticket23605B, Ticket23605C, TvChef, Valid,
+    X,
 )
 
 
@@ -1405,6 +1406,21 @@ class Queries4Tests(BaseQuerysetTest):
         self.assertEqual(str(combined.query).count('JOIN'), 2)
         self.assertEqual(len(combined), 1)
         self.assertEqual(combined[0].name, 'a1')
+
+    def test_ticket26522(self):
+        # This should not non-deterministically raise an AssertionError because
+        # change_map contains a circular reference. Reuse join aliases in-order.
+        s1 = School.objects.create()
+        s2 = School.objects.create()
+        s3 = School.objects.create()
+
+        t1 = Teacher.objects.create()
+        otherteachers = Teacher.objects.exclude(pk=t1.pk).exclude(friends=t1)
+
+        qs1 = otherteachers.filter(schools=s1).filter(schools=s2)
+        qs2 = otherteachers.filter(schools=s1).filter(schools=s3)
+
+        self.assertQuerysetEqual(qs1 | qs2, [])
 
     def test_ticket7095(self):
         # Updates that are filtered on the model being updated are somewhat

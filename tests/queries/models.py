@@ -737,3 +737,8 @@ class RelatedIndividual(models.Model):
 
     class Meta:
         db_table = 'RelatedIndividual'
+
+
+class Teacher(models.Model):
+    schools = models.ManyToManyField(School)
+    friends = models.ManyToManyField('self')
